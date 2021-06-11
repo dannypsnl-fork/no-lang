@@ -1,16 +1,24 @@
 #lang racket
 
 (provide make-parser
-         parse-vardef)
+         parse-module)
 
 (require "lexer.rkt"
          "ast.rkt")
 
 ; parse
+(define (parse-module p)
+  (define ss '())
+  (let loop ()
+    (set! ss (append ss (list (parse-stmt p))))
+    (unless (predict p 'EOF)
+      (loop)))
+  ss)
+
 (define (parse-stmt p)
   (cond
     [(predict p 'identifier ':=)
-     (parse-fndef p)]
+     (parse-vardef p)]
     [(predict p 'identifier 'lparens)
      (parse-fndef p)]
     [(predict p 'return)
@@ -88,13 +96,13 @@
   (set-parser-offset! p (add1 origin))
   (get-token p origin))
 (define (consume p . wants)
-  (predict p wants))
+  (apply predict p wants))
 (define (predict p . wants)
   (for ([i (length wants)]
         [want wants])
     (define tok (peek p i))
     (unless (eq? (token-typ tok) want)
-      (error 'unexpected-token "want ~a, got ~a" want (token-typ tok)))))
+      (error 'unexpected-token "want ~a, got ~a" want tok))))
 
 (define (get-token p fixed-offset)
   (when (stream-empty? (parser-tokens p))

@@ -1,9 +1,12 @@
 #lang racket
 
 (module+ main
-  (require racket/cmdline)
+  (require racket/cmdline
+           "parser.rkt")
 
   (command-line
     #:program "no"
     #:args (file)
-    (void)))
+    (define p (make-parser file (open-input-file file)))
+    (parse-module p)
+    ))
