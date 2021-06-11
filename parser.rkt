@@ -12,7 +12,10 @@
     [(predict p 'identifier ':=)
      (parse-fndef p)]
     [(predict p 'identifier 'lparens)
-     (parse-fndef p)]))
+     (parse-fndef p)]
+    [(predict p 'return)
+     (consume p 'return)
+     (ret (parse-expr p #f 1))]))
 
 (define (parse-vardef p)
   (define name (consume p 'identifier))
