@@ -1,10 +1,7 @@
 #lang racket
 
-(require "lexer.rkt")
-
-; ast
-(struct expr () #:transparent)
-(struct binary expr (op left right) #:transparent)
+(require "lexer.rkt"
+         "ast.rkt")
 
 ; parse
 (define (parse-expr p left-hand-side previous-primary)
