@@ -19,7 +19,7 @@
   l)
 
 (define keyword*
-  '("true" "false" "and" "or"))
+  '("true" "false" "and" "or" "return"))
 
 ; state functions
 (define (lex-white-space l)
@@ -51,6 +51,23 @@
          lex-white-space]
     [#\= (next l)
          (emit l 'eq)
+         lex-white-space]
+    [#\( (next l)
+         (emit l 'lparens)
+         lex-white-space]
+    [#\) (next l)
+         (emit l 'rparens)
+         lex-white-space]
+    [#\{ (next l)
+         (emit l 'lbraces)
+         lex-white-space]
+    [#\} (next l)
+         (emit l 'rbraces)
+         lex-white-space]
+    [#\: (next l)
+         (when (eq? (peek l) #\=)
+           (next l)
+           (emit l ':=))
          lex-white-space]
     [(? char-numeric?) lex-number]
     [(? alpha-numeric?) lex-identifier]
