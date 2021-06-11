@@ -1,9 +1,37 @@
 #lang racket
 
+(provide make-parser
+         parse-vardef)
+
 (require "lexer.rkt"
          "ast.rkt")
 
 ; parse
+(define (parse-stmt p)
+  (cond
+    [(predict p 'identifier ':=)
+     (parse-fndef p)]
+    [(predict p 'identifier 'lparens)
+     (parse-fndef p)]))
+
+(define (parse-vardef p)
+  (define name (consume p 'identifier))
+  (consume p ':=)
+  (define expr (parse-expr p #f 1))
+  (vardef name expr))
+
+(define (parse-fndef p)
+  (define name (consume p 'identifier))
+  (consume p 'lparens)
+  (consume p 'rparens 'lbraces)
+  (define ss '())
+  (let loop ()
+    (set! ss (append ss (list (parse-stmt p))))
+    (unless (predict p 'rbraces)
+      (loop)))
+  (consume p 'rbraces)
+  (fndef name ss))
+
 (define (parse-expr p left-hand-side previous-primary)
   (define lhs (if left-hand-side
                   left-hand-side
@@ -46,10 +74,9 @@
   #:mutable
   #:transparent)
 
-(define (parse name input)
+(define (make-parser name input)
   (define lexer (lex name input))
-  (define p (parser name lexer (stream) 0))
-  (parse-expr p #f 1))
+  (parser name lexer (stream) 0))
 
 (define (peek p [n 0])
   (get-token p (+ (parser-offset p) n)))
@@ -101,6 +128,10 @@
 
 (module+ test
   (require rackunit)
+
+  (define (parse name input)
+    (define p (make-parser name input))
+    (parse-expr p #f 1))
 
   (check-equal? (parse "parsing" (open-input-string "12 + 23 * 34"))
                 (binary 'add 12 (binary 'mul 23 34)))
