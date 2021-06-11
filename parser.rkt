@@ -96,7 +96,8 @@
   (set-parser-offset! p (add1 origin))
   (get-token p origin))
 (define (consume p . wants)
-  (apply predict p wants))
+  (apply predict p wants)
+  (take p))
 (define (predict p . wants)
   (for ([i (length wants)]
         [want wants])
