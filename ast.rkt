@@ -12,7 +12,7 @@
   (name expr)
   #:transparent)
 (struct fndef statement
-  (name stmts)
+  (name params stmts)
   #:transparent)
 (struct ret statement (expr) #:transparent)
 

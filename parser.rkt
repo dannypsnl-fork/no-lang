@@ -23,7 +23,9 @@
      (parse-fndef p)]
     [(predict? p 'return)
      (consume p 'return)
-     (ret (parse-expr p #f 1))]))
+     (ret (parse-expr p #f 1))]
+    [else
+     (parse-expr p #f 1)]))
 
 (define (parse-vardef p)
   (define name (consume p 'identifier))
@@ -46,7 +48,7 @@
     (unless (predict? p 'rbraces)
       (loop)))
   (consume p 'rbraces)
-  (fndef name ss))
+  (fndef name params ss))
 
 (define (parse-expr p left-hand-side previous-primary)
   (define lhs (if left-hand-side
