@@ -26,7 +26,7 @@
              (parameterize ([cur-env (make-env)])
                (for ([p params]
                      [a args])
-                 (env/bind p (eval-expr a)))
+                 (env/bind (token-val p) (eval-expr a)))
                  (for ([s body])
                (eval-stmt s return))))))]
     [(ret e)
