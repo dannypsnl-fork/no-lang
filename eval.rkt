@@ -12,7 +12,7 @@
        (env/bind name expr)]
       [(fndef name params body)
        (env/bind name body)]
-      [else (displayln (eval-expr s))])))
+      [expr (displayln (eval-expr expr))])))
 
 (define (eval-expr e)
   (match e
