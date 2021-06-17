@@ -25,7 +25,6 @@
     [(predict? 'identifier 'lparens)
      (with-handlers ([(lambda (e) #t)
                       (lambda (e)
-                        (put-back 3)
                         (parse-expr #f 1))])
        (parse-fndef))]
     [(predict? 'return)
@@ -44,8 +43,9 @@
   (consume 'lparens)
   (define params '())
   (let loop ()
-    (set! params (append params (list (take))))
     (unless (predict? 'rparens)
+      (set! params (append params (list (consume 'identifier
+                                                 #:put-back 2))))
       (loop)))
   (consume 'rparens 'lbraces)
   (define ss '())
@@ -129,8 +129,12 @@
   (define origin (parser-offset (current-parser)))
   (set-parser-offset! (current-parser) (+ origin n))
   (get-token origin))
-(define (consume . wants)
-  (apply predict wants)
+(define (consume #:put-back [n 0] . wants)
+  (with-handlers ([(lambda (e) #t)
+                   (lambda (e)
+                     (put-back n)
+                     (raise e))])
+    (apply predict wants))
   (take (length wants)))
 (define (predict . wants)
   (for ([i (length wants)]
