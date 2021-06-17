@@ -20,6 +20,8 @@
     [(fndef name params body)
      (env/bind (token-val name)
          (lambda (args)
+           (unless (= (length args) (length params))
+             (error 'arity "want: ~a, get: ~a" (length params) (length args)))
            (let/cc return
              (parameterize ([cur-env (make-env)])
                (for ([p params]
