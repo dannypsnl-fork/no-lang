@@ -52,6 +52,9 @@
     [#\= (next l)
          (emit l 'eq)
          lex-white-space]
+    [#\, (next l)
+         (emit l 'comma)
+         lex-white-space]
     [#\( (next l)
          (emit l 'lparens)
          lex-white-space]
@@ -128,12 +131,17 @@
                             (- (lexer-offset l) (lexer-start l))))
 
 (define (new-item l ty value)
+  (define p (- (lexer-column l) (string-length value)))
+  (define line
+    (if (< p 0)
+      (sub1 (lexer-line l))
+      (lexer-line l)))
   (channel-put
    (lexer-tokens l)
    (token ty value
           ; since token must on the same line, we can rely on length of value
-          (pos (lexer-name l) (lexer-line l) (- (lexer-column l) (string-length value)))
-          (pos (lexer-name l) (lexer-line l) (lexer-column l)))))
+          (pos (lexer-name l) line p)
+          (pos (lexer-name l) line (lexer-column l)))))
 
 (define keyword=>keyword-type
   (make-hash
