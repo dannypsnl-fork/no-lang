@@ -47,7 +47,8 @@
       (set! params (append params (list (consume 'identifier
                                                  #:put-back 2))))
       (loop)))
-  (consume 'rparens 'lbraces)
+  (consume 'rparens 'lbraces
+           #:put-back (+ 2 (length params)))
   (define ss '())
   (let loop ()
     (set! ss (append ss (list (parse-stmt))))
