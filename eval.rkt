@@ -26,23 +26,23 @@
              (parameterize ([cur-env (make-env)])
                (for ([p params]
                      [a args])
-                 (env/bind (token-val p) (eval-expr a)))
-                 (for ([s body])
-               (eval-stmt s return))))))]
+                 (env/bind (token-val p) a))
+               (for ([s body])
+                 (eval-stmt s return))))))]
     [(ret e)
      (unless return
        (error 'cannot-return "You're not in a context can return, e.g. function"))
      (return (eval-expr e))]
-    [(? expr?) (eval-expr s)]))
+    [else (eval-expr s)]))
 
 (define (eval-expr e)
   (match e
     [(binary op l r)
      (case op
-       [(+) (+ (eval-expr l) (eval-expr r))]
-       [(-) (- (eval-expr l) (eval-expr r))]
-       [(*) (* (eval-expr l) (eval-expr r))]
-       [(/) (/ (eval-expr l) (eval-expr r))])]
-    [(func-call fn args) ((env/lookup fn) args)]
+       [(add) (+ (eval-expr l) (eval-expr r))]
+       [(sub) (- (eval-expr l) (eval-expr r))]
+       [(mul) (* (eval-expr l) (eval-expr r))]
+       [(div) (/ (eval-expr l) (eval-expr r))])]
+    [(func-call fn args) ((env/lookup fn) (map eval-expr args))]
     [(? string?) (env/lookup e)]
     [else e]))
