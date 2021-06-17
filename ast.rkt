@@ -1,11 +1,6 @@
 #lang racket
 
-(provide (struct-out statement)
-         (struct-out vardef)
-         (struct-out fndef)
-         (struct-out ret)
-         (struct-out expr)
-         (struct-out binary))
+(provide (all-defined-out))
 
 (struct statement () #:transparent)
 (struct vardef statement
@@ -18,3 +13,4 @@
 
 (struct expr () #:transparent)
 (struct binary expr (op left right) #:transparent)
+(struct func-call expr (fn args) #:transparent)

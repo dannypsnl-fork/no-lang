@@ -20,12 +20,15 @@
     [(predict? p 'identifier ':=)
      (parse-vardef p)]
     [(predict? p 'identifier 'lparens)
-     (parse-fndef p)]
+     (with-handlers ([(lambda (e) #t)
+                      (lambda (e)
+                        (put-back p 3)
+                        (parse-expr p #f 1))])
+       (parse-fndef p))]
     [(predict? p 'return)
      (consume p 'return)
      (ret (parse-expr p #f 1))]
-    [else
-     (parse-expr p #f 1)]))
+    [else (parse-expr p #f 1)]))
 
 (define (parse-vardef p)
   (define name (consume p 'identifier))
@@ -53,13 +56,13 @@
 (define (parse-expr p left-hand-side previous-primary)
   (define lhs (if left-hand-side
                   left-hand-side
-                  (parse-unary p)))
+                  (parse-primary p (parse-unary p))))
 
   (let loop ([lookahead (peek p)])
     (when (>= (precedence lookahead) previous-primary)
       (define operator lookahead)
       (take p)
-      (define rhs (parse-unary p))
+      (define rhs (parse-primary p (parse-unary p)))
       (set! lookahead (peek p))
       (let loop ()
         (when (or (> (precedence lookahead) (precedence operator))
@@ -73,6 +76,25 @@
       (loop lookahead)))
 
   lhs)
+
+(define (parse-primary p unary)
+  (cond
+    [(predict? p 'lparens)
+     (consume p 'lparens)
+     (let loop ([args '()])
+       (cond
+         [(predict? p '(comma rparens))
+          (consume p 'comma 'rparens)
+          (func-call unary args)]
+         [(predict? p 'rparens)
+          (consume p 'rparens)
+          (func-call unary args)]
+         [else
+          (when (predict? p 'comma)
+            (consume p 'comma))
+          (define expr (parse-expr p #f 1))
+          (loop (append args (list expr)))]))]
+    [else unary]))
 
 (define (parse-unary p)
   (define tok (peek p))
@@ -98,6 +120,8 @@
 
 (define (peek p [n 0])
   (get-token p (+ (parser-offset p) n)))
+(define (put-back p [n 1])
+  (set-parser-offset! p (- (parser-offset p) n)))
 (define (take p [n 1])
   (define origin (parser-offset p))
   (set-parser-offset! p (+ origin n))
