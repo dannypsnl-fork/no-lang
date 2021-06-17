@@ -1,6 +1,6 @@
 #lang info
 (define collection "no")
-(define deps '("base"))
+(define deps '("base" "jsonrpc" "lsp"))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/no.scrbl" ())))
 (define pkg-desc "Description Here")
