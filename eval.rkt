@@ -11,7 +11,7 @@
     (cond
       [(statement? s)
        (eval-stmt s)]
-      [(expr? s) (displayln (eval-expr s))])))
+      [else (displayln (eval-expr s))])))
 
 (define (eval-stmt s [return #f])
   (match s
@@ -24,7 +24,7 @@
              (parameterize ([cur-env (make-env)])
                (for ([p params]
                      [a args])
-                 (env/bind p a))
+                 (env/bind p (eval-expr a)))
                  (for ([s body])
                (eval-stmt s return))))))]
     [(ret e)
@@ -42,4 +42,5 @@
        [(*) (* (eval-expr l) (eval-expr r))]
        [(/) (/ (eval-expr l) (eval-expr r))])]
     [(func-call fn args) ((env/lookup fn) args)]
+    [(? string?) (env/lookup e)]
     [else e]))
