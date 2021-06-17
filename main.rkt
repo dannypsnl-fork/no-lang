@@ -5,12 +5,12 @@
 
 (define/match (handle args)
   [((list "run" file))
-   (define p (make-parser file (open-input-file file)))
-   (eval-module (parse-module p))]
+   (parameterize ([current-parser (make-parser file (open-input-file file))])
+     (eval-module (parse-module)))]
   [((list "debug" file))
-   (define p (make-parser file (open-input-file file)))
-   (for ([s (parse-module p)])
-     (printf "statement: ~a\n" s))])
+   (parameterize ([current-parser (make-parser file (open-input-file file))])
+     (for ([s (parse-module)])
+       (printf "statement: ~a\n" s)))])
 
 (module+ main
   (require racket/cmdline)

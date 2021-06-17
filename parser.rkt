@@ -1,75 +1,78 @@
 #lang racket
 
-(provide make-parser
+(provide current-parser
+         make-parser
          parse-module)
 
 (require "lexer.rkt"
          "ast.rkt")
 
+(define current-parser (make-parameter #f))
+
 ; parse
-(define (parse-module p)
+(define (parse-module)
   (define ss '())
   (let loop ()
-    (set! ss (append ss (list (parse-stmt p))))
-    (unless (predict? p 'EOF)
+    (set! ss (append ss (list (parse-stmt))))
+    (unless (predict? 'EOF)
       (loop)))
   ss)
 
-(define (parse-stmt p)
+(define (parse-stmt)
   (cond
-    [(predict? p 'identifier ':=)
-     (parse-vardef p)]
-    [(predict? p 'identifier 'lparens)
+    [(predict? 'identifier ':=)
+     (parse-vardef)]
+    [(predict? 'identifier 'lparens)
      (with-handlers ([(lambda (e) #t)
                       (lambda (e)
-                        (put-back p 3)
-                        (parse-expr p #f 1))])
-       (parse-fndef p))]
-    [(predict? p 'return)
-     (consume p 'return)
-     (ret (parse-expr p #f 1))]
-    [else (parse-expr p #f 1)]))
+                        (put-back 3)
+                        (parse-expr #f 1))])
+       (parse-fndef))]
+    [(predict? 'return)
+     (consume 'return)
+     (ret (parse-expr #f 1))]
+    [else (parse-expr #f 1)]))
 
-(define (parse-vardef p)
-  (define name (consume p 'identifier))
-  (consume p ':=)
-  (define expr (parse-expr p #f 1))
+(define (parse-vardef)
+  (define name (consume 'identifier))
+  (consume ':=)
+  (define expr (parse-expr #f 1))
   (vardef name expr))
 
-(define (parse-fndef p)
-  (define name (consume p 'identifier))
-  (consume p 'lparens)
+(define (parse-fndef)
+  (define name (consume 'identifier))
+  (consume 'lparens)
   (define params '())
   (let loop ()
-    (set! params (append params (list (take p))))
-    (unless (predict? p 'rparens)
+    (set! params (append params (list (take))))
+    (unless (predict? 'rparens)
       (loop)))
-  (consume p 'rparens 'lbraces)
+  (consume 'rparens 'lbraces)
   (define ss '())
   (let loop ()
-    (set! ss (append ss (list (parse-stmt p))))
-    (unless (predict? p 'rbraces)
+    (set! ss (append ss (list (parse-stmt))))
+    (unless (predict? 'rbraces)
       (loop)))
-  (consume p 'rbraces)
+  (consume 'rbraces)
   (fndef name params ss))
 
-(define (parse-expr p left-hand-side previous-primary)
+(define (parse-expr left-hand-side previous-primary)
   (define lhs (if left-hand-side
                   left-hand-side
-                  (parse-primary p (parse-unary p))))
+                  (parse-primary (parse-unary))))
 
-  (let loop ([lookahead (peek p)])
+  (let loop ([lookahead (peek)])
     (when (>= (precedence lookahead) previous-primary)
       (define operator lookahead)
-      (take p)
-      (define rhs (parse-primary p (parse-unary p)))
-      (set! lookahead (peek p))
+      (take)
+      (define rhs (parse-primary (parse-unary)))
+      (set! lookahead (peek))
       (let loop ()
         (when (or (> (precedence lookahead) (precedence operator))
                   (and (right-assoc? lookahead)
                        (= (precedence lookahead) (precedence operator))))
-          (set! rhs (parse-expr p rhs (precedence lookahead)))
-          (set! lookahead (peek p))
+          (set! rhs (parse-expr rhs (precedence lookahead)))
+          (set! lookahead (peek))
           (loop)))
       (set! lhs (binary (token-typ operator)
                         lhs rhs))
@@ -77,35 +80,35 @@
 
   lhs)
 
-(define (parse-primary p unary)
+(define (parse-primary unary)
   (cond
-    [(predict? p 'lparens)
-     (consume p 'lparens)
+    [(predict? 'lparens)
+     (consume 'lparens)
      (let loop ([args '()])
        (cond
-         [(predict? p '(comma rparens))
-          (consume p 'comma 'rparens)
+         [(predict? '(comma rparens))
+          (consume 'comma 'rparens)
           (func-call unary args)]
-         [(predict? p 'rparens)
-          (consume p 'rparens)
+         [(predict? 'rparens)
+          (consume 'rparens)
           (func-call unary args)]
          [else
-          (when (predict? p 'comma)
-            (consume p 'comma))
-          (define expr (parse-expr p #f 1))
+          (when (predict? 'comma)
+            (consume 'comma))
+          (define expr (parse-expr #f 1))
           (loop (append args (list expr)))]))]
     [else unary]))
 
-(define (parse-unary p)
-  (define tok (peek p))
+(define (parse-unary)
+  (define tok (peek))
   (case (token-typ tok)
-    [(number) (take p)
+    [(number) (take)
               (string->number (token-val tok))]
-    [(true) (take p)
+    [(true) (take)
             'true]
-    [(false) (take p)
+    [(false) (take)
              'false]
-    [(identifier) (take p)
+    [(identifier) (take)
                   (token-val tok)]
     [else (error 'unknown "~a" tok)]))
 
@@ -118,31 +121,32 @@
   (define lexer (lex name input))
   (parser name lexer (stream) 0))
 
-(define (peek p [n 0])
-  (get-token p (+ (parser-offset p) n)))
-(define (put-back p [n 1])
-  (set-parser-offset! p (- (parser-offset p) n)))
-(define (take p [n 1])
-  (define origin (parser-offset p))
-  (set-parser-offset! p (+ origin n))
-  (get-token p origin))
-(define (consume p . wants)
-  (apply predict (cons p wants))
-  (take p (length wants)))
-(define (predict p . wants)
+(define (peek [n 0])
+  (get-token (+ (parser-offset (current-parser)) n)))
+(define (put-back [n 1])
+  (set-parser-offset! (current-parser) (- (parser-offset (current-parser)) n)))
+(define (take [n 1])
+  (define origin (parser-offset (current-parser)))
+  (set-parser-offset! (current-parser) (+ origin n))
+  (get-token origin))
+(define (consume . wants)
+  (apply predict wants)
+  (take (length wants)))
+(define (predict . wants)
   (for ([i (length wants)]
         [want wants])
-    (define tok (peek p i))
+    (define tok (peek i))
     (unless (eq? (token-typ tok) want)
       (error 'unexpected-token "want ~a, got ~a" want tok))))
-(define (predict? p . wants)
+(define (predict? . wants)
   (let/cc return
     (with-handlers ([(λ (e) #t)
                      (λ (e) (return #f))])
-      (apply predict (cons p wants)))
+      (apply predict wants))
     #t))
 
-(define (get-token p fixed-offset)
+(define (get-token fixed-offset)
+  (define p (current-parser))
   (when (stream-empty? (parser-tokens p))
     (increase-token-stream p))
   (define tokens (parser-tokens p))
@@ -151,7 +155,7 @@
         (case (token-typ last-token)
           [(EOF) last-token]
           [else (increase-token-stream p)
-                (get-token p fixed-offset)]))
+                (get-token fixed-offset)]))
       (stream-ref tokens fixed-offset)))
 (define (increase-token-stream p)
   (define l (parser-lexer p))
@@ -179,8 +183,8 @@
   (require rackunit)
 
   (define (parse name input)
-    (define p (make-parser name input))
-    (parse-expr p #f 1))
+    (parameterize ([current-parser (make-parser name input)])
+      (parse-expr #f 1)))
 
   (check-equal? (parse "parsing" (open-input-string "12 + 23 * 34"))
                 (binary 'add 12 (binary 'mul 23 34)))
@@ -189,9 +193,9 @@
              (define (test-pos l c)
                (pos "" l c))
              (define lexer (lex "" (open-input-string "12 + 23 * 34")))
-             (define p (parser "" lexer (stream) 0))
-             (check-equal? (get-token p 4)
-                           (token 'number "34" (test-pos 1 10) (test-pos 1 12))))
+             (parameterize ([current-parser (parser "" lexer (stream) 0)])
+               (check-equal? (get-token 4)
+                             (token 'number "34" (test-pos 1 10) (test-pos 1 12)))))
 
   (test-case "right assoc"
              (check-equal? (parse "parsing" (open-input-string "12 ^ 23 ^ 34"))
