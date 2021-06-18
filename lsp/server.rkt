@@ -9,6 +9,13 @@
          "../parser.rkt"
          "../ast.rkt")
 
+(define (convert-pos p)
+  (match-define (pos path line col) p)
+  (Pos #:line line #:char col))
+(define (range start end)
+  (Range #:start (convert-pos start)
+         #:end (convert-pos end)))
+
 (define/match (user-handler method params)
   [("initialize" params)
    (initialize params)]
