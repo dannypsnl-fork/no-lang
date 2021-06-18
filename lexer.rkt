@@ -1,8 +1,9 @@
 #lang racket
 
 (provide lex lexer-tokens
-         (struct-out token)
-         (struct-out pos))
+         (struct-out token))
+
+(require "ast.rkt")
 
 ; export
 (define (lex name input-port)
@@ -94,8 +95,6 @@
   lex-white-space)
 
 ; helpers
-(struct pos (filename line column) #:transparent)
-
 (struct lexer
   (name
    input ; list char

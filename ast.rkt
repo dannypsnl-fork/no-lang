@@ -2,6 +2,8 @@
 
 (provide (all-defined-out))
 
+(struct pos (filename line column) #:transparent)
+
 (struct statement () #:transparent)
 (struct vardef statement
   (name expr)
