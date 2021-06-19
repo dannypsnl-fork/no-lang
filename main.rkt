@@ -3,8 +3,7 @@
 (require "parser.rkt"
          "eval.rkt"
          "ast.rkt"
-         "lexer.rkt"
-         "lsp/server.rkt")
+         "lexer.rkt")
 
 (define/match (handle args)
   [((list "run" file))
@@ -14,8 +13,6 @@
    (parameterize ([current-parser (make-parser file (open-input-file file))])
      (for ([s (parse-module)])
        (printf "statement: ~a\n" s)))]
-  [((list "lsp"))
-   (run-server)]
   [(_) (void)])
 
 (module+ main
